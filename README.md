@@ -33,6 +33,6 @@ This project uses the polyfills for the following modules:
 
 Check out the following files to see how the polyfills are configured:
 
-- `metro.config.js`
-- `babel.config.js`
-- `src/setupPolyfill.ts`
+- [`metro.config.js`](./metro.config.js)
+- [`babel.config.js`](./babel.config.js) 
+- [`src/setupPolyfill.ts`](./src/setupPolyfill.ts)
