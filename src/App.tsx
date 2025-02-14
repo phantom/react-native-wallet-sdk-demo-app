@@ -1,4 +1,4 @@
-import { createPhantom, PhantomConfig } from "@tian000/react-native-wallet-sdk";
+import { createPhantom, PhantomConfig } from "@phantom/react-native-wallet-sdk";
 import { View, StyleSheet, Button, Alert } from "react-native";
 import * as Linking from "expo-linking";
 import { useState } from "react";
