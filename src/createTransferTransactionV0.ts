@@ -17,7 +17,7 @@ const createTransferTransactionV0 = async (
   // get latest `blockhash`
   const blockhash = await connection
     .getLatestBlockhash()
-    .then((res) => res.blockhash);
+    .then((res: any) => res.blockhash);
 
   // create an array with your desired `instructions`
   // in this case, just a transfer instruction

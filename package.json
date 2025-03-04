@@ -16,9 +16,10 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
-    "@phantom/react-native-wallet-sdk": "^0.0.23",
+    "@phantom/react-native-wallet-sdk": "^0.0.28",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
+    "@solana/web3.js": "1.73.5",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "expo": "~52.0.35",

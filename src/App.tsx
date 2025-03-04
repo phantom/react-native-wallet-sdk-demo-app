@@ -1,5 +1,17 @@
-import { createPhantom, PhantomConfig } from "@phantom/react-native-wallet-sdk";
-import { View, StyleSheet, Button, Alert } from "react-native";
+import {
+  createPhantom,
+  LoginOptions,
+  PhantomConfig,
+} from "@phantom/react-native-wallet-sdk";
+import {
+  View,
+  StyleSheet,
+  Button,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from "react-native";
 import * as Linking from "expo-linking";
 import { useState } from "react";
 import createTransferTransactionV0 from "./createTransferTransactionV0";
@@ -14,21 +26,21 @@ const phantom = createPhantom(opts);
 
 export default function App() {
   const [solanaAddress, setSolanaAddress] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLoginWithGoogle = async () => {
     const addresses = await phantom.loginWithGoogle();
     setSolanaAddress(addresses[0].solana);
     // Persist the user's Solana address to storage
     // The account will stay logged in until the user logs out
   };
 
-  if (!solanaAddress) {
-    return (
-      <View style={styles.container}>
-        <Button title="Login with Phantom" onPress={handleLogin} />
-      </View>
-    );
-  }
+  const handleLoginWithApple = async () => {
+    const addresses = await phantom.loginWithApple();
+    setSolanaAddress(addresses[0].solana);
+    // Persist the user's Solana address to storage
+    // The account will stay logged in until the user logs out
+  };
 
   // Sign a message or transaction with the Phantom Embedded wallet
   const handleSignMessage = async () => {
@@ -40,7 +52,7 @@ export default function App() {
 
   const handleSignTransaction = async () => {
     const transaction = await createTransferTransactionV0(
-      new PublicKey(solanaAddress),
+      new PublicKey(solanaAddress || ""),
       new Connection("https://api.mainnet-beta.solana.com")
     );
     const signedTransaction = await phantom.providers.solana.signTransaction(
@@ -48,6 +60,53 @@ export default function App() {
     );
     Alert.alert("Signature", JSON.stringify(signedTransaction.serialize()));
   };
+
+  if (!solanaAddress) {
+    return (
+      <View style={styles.container}>
+        <Button
+          title="Login with Phantom"
+          onPress={() => setIsModalVisible(true)}
+        />
+        {isModalVisible && (
+          <View>
+            <Modal
+              visible={isModalVisible}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setIsModalVisible(false)}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
+                  justifyContent: "flex-end",
+                }}
+                activeOpacity={1}
+                onPress={() => setIsModalVisible(false)}
+              >
+                <TouchableWithoutFeedback>
+                  <View
+                    style={{
+                      backgroundColor: "#181818",
+                      borderTopLeftRadius: 20,
+                      borderTopRightRadius: 20,
+                      width: "100%",
+                    }}
+                  >
+                    <LoginOptions
+                      onGoogleLogin={() => handleLoginWithGoogle()}
+                      onAppleLogin={() => handleLoginWithApple()}
+                    />
+                  </View>
+                </TouchableWithoutFeedback>
+              </TouchableOpacity>
+            </Modal>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
