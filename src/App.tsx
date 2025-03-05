@@ -61,6 +61,17 @@ export default function App() {
     Alert.alert("Signature", JSON.stringify(signedTransaction.serialize()));
   };
 
+  const handleLogout = async () => {
+    await phantom.logout();
+    setSolanaAddress(null);
+  };
+
+  const handleDismissBrowserIn10Seconds = async () => {
+    setTimeout(() => {
+      phantom.dismissBrowser();
+    }, 10_000);
+  };
+
   if (!solanaAddress) {
     return (
       <View style={styles.container}>
@@ -108,10 +119,14 @@ export default function App() {
     );
   }
 
+
+
   return (
     <View style={styles.container}>
       <Button title="Sign Message" onPress={handleSignMessage} />
       <Button title="Sign Transaction" onPress={handleSignTransaction} />
+      <Button title="Logout" onPress={handleLogout} />
+      <Button title="Dismiss Browser in 10 seconds" onPress={handleDismissBrowserIn10Seconds} />
     </View>
   );
 }
