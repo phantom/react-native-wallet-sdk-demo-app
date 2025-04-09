@@ -1,36 +1,39 @@
 import {
-  createPhantom,
-  LoginOptions,
-  PhantomConfig,
+  PhantomProvider,
+  usePhantom,
 } from "@phantom/react-native-wallet-sdk";
 import {
   View,
   StyleSheet,
   Button,
   Alert,
-  Modal,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   Text,
-  ScrollView,
   Animated,
 } from "react-native";
 import * as Linking from "expo-linking";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import createTransferTransactionV0 from "./createTransferTransactionV0";
 import sendTransactionPhantomProvider from "./createEthTransaction";
 import { Connection, PublicKey } from "@solana/web3.js";
 
-const opts: PhantomConfig = {
+// Configure Phantom wallet
+const phantomConfig = {
   redirectURI: Linking.createURL(""),
   sdkKey: "my-sdk-key",
+  autoShowLoginIfNeeded: true,
 };
 
-const phantom = createPhantom(opts);
-
 export default function App() {
-  const [addresses, setAddresses] = useState<any[] | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  return (
+    <PhantomProvider config={phantomConfig}>
+      <WalletContent />
+    </PhantomProvider>
+  );
+}
+
+function WalletContent() {
+  const { phantom, isLoggedIn, addresses, showLoginOptions, logout } = usePhantom();
   const [isExpanded, setIsExpanded] = useState(false);
   const heightAnim = useRef(new Animated.Value(0)).current;
 
@@ -43,18 +46,18 @@ export default function App() {
     }).start();
   };
 
-  const handleLoginWithGoogle = async () => {
-    const addresses = await phantom.loginWithGoogle();
-    setAddresses(addresses);
-  };
-
-  const handleLoginWithApple = async () => {
-    const addresses = await phantom.loginWithApple();
-    setAddresses(addresses);
-  };
+  // Extract Solana public key if available
+  const solanaPublicKey = useMemo(() => {
+    if (addresses && addresses.length > 0 && addresses[0].solana) {
+      return new PublicKey(addresses[0].solana);
+    }
+    return null;
+  }, [addresses]);
 
   // Sign a message or transaction with the Phantom Embedded wallet
   const handleSignMessage = async () => {
+    if (!phantom) return;
+    
     const { signature } = await phantom.providers.solana.signMessage(
       new TextEncoder().encode("Hello, world!")
     );
@@ -62,9 +65,10 @@ export default function App() {
   };
 
   const handleSignTransaction = async () => {
-    if (!addresses || addresses.length === 0) return;
+    if (!phantom || !solanaPublicKey) return;
+    
     const transaction = await createTransferTransactionV0(
-      new PublicKey(addresses[0].solana),
+      solanaPublicKey,
       new Connection("https://api.mainnet-beta.solana.com")
     );
     const signedTransaction = await phantom.providers.solana.signTransaction(
@@ -74,7 +78,8 @@ export default function App() {
   };
 
   const handleSendEthTransaction = async () => {
-    if (!addresses || addresses.length === 0) return;
+    if (!phantom || !addresses || addresses.length === 0) return;
+    
     try {
       const result = await sendTransactionPhantomProvider(
         phantom.providers.ethereum,
@@ -88,60 +93,19 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    await phantom.logout();
-    setAddresses(null);
-  };
-
   const handleDismissBrowserIn10Seconds = async () => {
+    if (!phantom) return;
+    
     setTimeout(() => {
       phantom.dismissBrowser();
     }, 10_000);
   };
 
-  if (!addresses) {
+  // If not logged in, show login button
+  if (!isLoggedIn) {
     return (
       <View style={styles.container}>
-        <Button
-          title="Login with Phantom"
-          onPress={() => setIsModalVisible(true)}
-        />
-        {isModalVisible && (
-          <View>
-            <Modal
-              visible={isModalVisible}
-              transparent={true}
-              animationType="slide"
-              onRequestClose={() => setIsModalVisible(false)}
-            >
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  justifyContent: "flex-end",
-                }}
-                activeOpacity={1}
-                onPress={() => setIsModalVisible(false)}
-              >
-                <TouchableWithoutFeedback>
-                  <View
-                    style={{
-                      backgroundColor: "#181818",
-                      borderTopLeftRadius: 20,
-                      borderTopRightRadius: 20,
-                      width: "100%",
-                    }}
-                  >
-                    <LoginOptions
-                      onGoogleLogin={() => handleLoginWithGoogle()}
-                      onAppleLogin={() => handleLoginWithApple()}
-                    />
-                  </View>
-                </TouchableWithoutFeedback>
-              </TouchableOpacity>
-            </Modal>
-          </View>
-        )}
+        <Button title="Login with Phantom" onPress={showLoginOptions} />
       </View>
     );
   }
@@ -199,7 +163,7 @@ export default function App() {
           title="Send ETH Transaction"
           onPress={handleSendEthTransaction}
         />
-        <Button title="Logout" onPress={handleLogout} />
+        <Button title="Logout" onPress={logout} />
         <Button
           title="Dismiss Browser in 10 seconds"
           onPress={handleDismissBrowserIn10Seconds}
